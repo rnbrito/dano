@@ -86,7 +86,7 @@ function Get-DanoHash([string]$Path) {
     $tmp = Join-Path $script:TmpDir ([guid]::NewGuid().ToString() + '.txt')
 
     try {
-        $res = Invoke-Tool $script:DanoExe @('-w', '--disable-filter', '-o', $tmp, $Path) $script:TmpDir
+        $res = Invoke-Tool $script:DanoExe @('-w', '--disable-filter', "--output-file=$tmp", $Path) $script:TmpDir
 
         if (Test-Path -LiteralPath $tmp) {
             foreach ($line in [System.IO.File]::ReadAllLines($tmp, [System.Text.Encoding]::UTF8)) {
@@ -239,8 +239,10 @@ try {
         if ($hA.Erro) { $detalhes += "dano em A: $($hA.Erro)" }
         if ($hB.Erro) { $detalhes += "dano em B: $($hB.Erro)" }
 
+        $semHash = (-not $hA.Hash) -or (-not $hB.Hash)
+
         if ($SemDecodificar) {
-            $r.Veredito = 'DIFERENTES'
+            $r.Veredito = if ($semHash) { 'ERRO AO GERAR HASH' } else { 'DIFERENTES' }
         }
         else {
             Write-Host '        hashes diferentes; decodificando as duas copias com o ffmpeg...'
@@ -251,6 +253,7 @@ try {
             $r.Veredito = if ($r.ErrosA -eq 0 -and $r.ErrosB -gt 0) { 'DIFERENTES: B DANIFICADA' }
                           elseif ($r.ErrosA -gt 0 -and $r.ErrosB -eq 0) { 'DIFERENTES: A DANIFICADA' }
                           elseif ($r.ErrosA -gt 0 -and $r.ErrosB -gt 0) { 'DIFERENTES: AMBAS COM ERROS' }
+                          elseif ($semHash) { 'ERRO AO GERAR HASH' }
                           else { 'DIFERENTES: SEM ERROS DE DECODIFICACAO' }
         }
 
