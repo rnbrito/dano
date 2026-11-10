@@ -226,12 +226,11 @@ try {
         $r.HashB = if ($hB.Hash) { $hB.Hash } else { '' }
 
         if ($hA.Hash -and $hB.Hash -and ($hA.Hash -eq $hB.Hash)) {
-            $r.Veredito = 'IGUAIS'
-            if ($r.TamanhoA -ne $r.TamanhoB) {
-                $r.Detalhe = 'streams identicos, mas tamanho de arquivo diferente (tags/container)'
-            }
+            $r.Veredito = 'STREAMS IGUAIS'
+            $r.Detalhe = if ($r.TamanhoA -ne $r.TamanhoB) { 'audio/video identicos; tamanho de arquivo diferente (tags/container)' }
+                         else { 'audio/video identicos; se o SHA-256 do arquivo difere, a diferenca esta fora dos streams (tags/container)' }
             $resultados.Add([pscustomobject]$r)
-            Write-Host "        -> IGUAIS ($($hA.Hash))" -ForegroundColor Green
+            Write-Host "        -> STREAMS IGUAIS ($($hA.Hash))" -ForegroundColor Green
             continue
         }
 
@@ -277,10 +276,10 @@ $resultados | Group-Object Veredito | Sort-Object Name | ForEach-Object {
     Write-Host ('{0,3}  {1}' -f $_.Count, $_.Name)
 }
 
-$problemas = @($resultados | Where-Object { $_.Veredito -ne 'IGUAIS' })
+$problemas = @($resultados | Where-Object { $_.Veredito -ne 'STREAMS IGUAIS' })
 if ($problemas.Count -gt 0) {
     Write-Host ''
-    Write-Host 'Arquivos que NAO sao iguais:'
+    Write-Host 'Arquivos com streams diferentes ou com problema:'
     foreach ($p in $problemas) {
         Write-Host ('  [{0}] {1}' -f $p.Veredito, $p.Relativo)
         if ($null -ne $p.ErrosA) {

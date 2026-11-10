@@ -120,7 +120,7 @@ jobs:
             $rows | Format-List Veredito, Relativo, HashA, HashB, ErrosA, ErrosB, Detalhe
             if ($rows.Count -ne 3) { throw "${shell}: expected 3 rows" }
             $v = @{}; $rows | ForEach-Object { $v[(Split-Path $_.Relativo -Leaf)] = $_.Veredito }
-            if ($v['igual.mkv'] -ne 'IGUAIS') { throw "${shell}: igual.mkv -> $($v['igual.mkv'])" }
+            if ($v['igual.mkv'] -ne 'STREAMS IGUAIS') { throw "${shell}: igual.mkv -> $($v['igual.mkv'])" }
             if ($v['Preço danificado.mkv'] -ne 'DIFERENTES: B DANIFICADA') { throw "${shell}: danificado -> $($v['Preço danificado.mkv'])" }
             if ($v['SEM GEMEO.MP3'] -ne 'AUSENTE EM B') { throw "${shell}: sem gemeo -> $($v['SEM GEMEO.MP3'])" }
           }
