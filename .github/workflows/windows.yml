@@ -32,10 +32,9 @@ jobs:
           $dano = "..\target\release\dano.exe"
           & $dano -w *.*
           if ($LASTEXITCODE -ne 0) { throw "write failed" }
-          Get-ChildItem
-          Get-Content dano_hashes.txt
+          # a.mkv and a_retag.mkv share the same stream hash, so only one of them is recorded
           $records = @(Get-Content dano_hashes.txt | Where-Object { $_ -like '*hash_value*' })
-          if ($records.Count -ne 3) { throw "expected 3 records, found $($records.Count)" }
+          if ($records.Count -ne 2) { throw "expected 2 records, found $($records.Count)" }
           & $dano -t *.*
           if ($LASTEXITCODE -ne 0) { throw "test failed" }
           & $dano -p --canonical-paths a.mkv B.MP4
