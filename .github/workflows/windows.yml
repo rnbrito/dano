@@ -62,7 +62,8 @@ jobs:
           $dano = "..\target\release\dano.exe"
           "a.mkv`r`nB.MP4`r`n" | & $dano -w
           if ($LASTEXITCODE -ne 0) { throw "stdin write failed" }
-          "a.mkv`r`nB.MP4`r`n" | & $dano -t
+          if ((Get-Content dano_hashes.txt | Select-String '"path"').Count -ne 2) { throw "expected 2 records" }
+          & $dano -t a.mkv B.MP4
           if ($LASTEXITCODE -ne 0) { throw "stdin test failed" }
 
       - uses: actions/upload-artifact@v4
