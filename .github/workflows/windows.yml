@@ -75,7 +75,9 @@ jobs:
         run: |
           New-Item -ItemType Directory ..\side | Out-Null
           Copy-Item ..\target\release\dano.exe ..\side\
-          Copy-Item (Get-Command ffmpeg).Source ..\side\ffmpeg.exe
+          # copy the real ffmpeg.exe, not the Chocolatey shim found in PATH
+          $ffmpeg = Get-ChildItem "$env:ChocolateyInstall\lib\ffmpeg" -Recurse -Filter ffmpeg.exe | Select-Object -First 1
+          Copy-Item $ffmpeg.FullName ..\side\ffmpeg.exe
           Remove-Item dano_hashes.txt
           $env:PATH = "$env:SystemRoot\System32"
           & ..\side\dano.exe -w a.mkv
