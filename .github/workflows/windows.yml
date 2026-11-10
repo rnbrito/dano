@@ -85,6 +85,46 @@ jobs:
           $records = @(Get-Content dano_hashes.txt | Where-Object { $_ -like '*hash_value*' })
           if ($records.Count -ne 1) { throw "expected 1 record, found $($records.Count)" }
 
+      - name: Twin comparison script (PowerShell 7 and Windows PowerShell 5.1)
+        shell: pwsh
+        run: |
+          $a = New-Item -ItemType Directory "twins\RAIZ-A\filmes é ação" -Force
+          $b = New-Item -ItemType Directory "twins\RAIZ-B\filmes é ação" -Force
+          ffmpeg -loglevel error -f lavfi -i sine=d=5 -f lavfi -i testsrc=d=5 -shortest "$a\igual.mkv"
+          ffmpeg -loglevel error -f lavfi -i sine=d=5 -f lavfi -i testsrc2=d=5 -shortest "$a\Preço danificado.mkv"
+          ffmpeg -loglevel error -f lavfi -i sine=d=3 "$a\SEM GEMEO.MP3"
+          Copy-Item "$a\igual.mkv" $b
+          Copy-Item "$a\Preço danificado.mkv" $b
+          # corrupt the middle of the copy in B
+          $victim = "$b\Preço danificado.mkv"
+          $bytes = [IO.File]::ReadAllBytes($victim)
+          $rng = [Random]::new(42)
+          $start = [int]($bytes.Length / 3)
+          for ($i = $start; $i -lt $start + [int]($bytes.Length / 3); $i++) { $bytes[$i] = $rng.Next(256) }
+          [IO.File]::WriteAllBytes($victim, $bytes)
+
+          $rootA = (Resolve-Path twins\RAIZ-A).Path + '\'
+          $rootB = (Resolve-Path twins\RAIZ-B).Path + '\'
+          $list = Join-Path $PWD 'twins\lista.txt'
+          $lines = Get-ChildItem $rootA -Recurse -File | ForEach-Object FullName
+          [IO.File]::WriteAllLines($list, [string[]]$lines, [Text.UTF8Encoding]::new($false))
+          $dano = (Resolve-Path target\release\dano.exe).Path
+
+          foreach ($shell in 'pwsh', 'powershell') {
+            Write-Host "::group::$shell"
+            $out = Join-Path $PWD "twins\out-$shell"
+            & $shell -NoProfile -ExecutionPolicy Bypass -File scripts\comparar-gemeos.ps1 -Lista $list -RaizA $rootA -RaizB $rootB -Saida $out -Dano $dano
+            if ($LASTEXITCODE -ne 0) { throw "$shell: script failed" }
+            Write-Host "::endgroup::"
+            $rows = Import-Csv "$out\relatorio.csv" -Delimiter ';' -Encoding UTF8
+            $rows | Format-List Veredito, Relativo, HashA, HashB, ErrosA, ErrosB, Detalhe
+            if ($rows.Count -ne 3) { throw "$shell: expected 3 rows" }
+            $v = @{}; $rows | ForEach-Object { $v[(Split-Path $_.Relativo -Leaf)] = $_.Veredito }
+            if ($v['igual.mkv'] -ne 'IGUAIS') { throw "$shell: igual.mkv -> $($v['igual.mkv'])" }
+            if ($v['Preço danificado.mkv'] -ne 'DIFERENTES: B DANIFICADA') { throw "$shell: danificado -> $($v['Preço danificado.mkv'])" }
+            if ($v['SEM GEMEO.MP3'] -ne 'AUSENTE EM B') { throw "$shell: sem gemeo -> $($v['SEM GEMEO.MP3'])" }
+          }
+
       - uses: actions/upload-artifact@v4
         with:
           name: dano-windows-x86_64
