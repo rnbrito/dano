@@ -32,7 +32,10 @@ jobs:
           $dano = "..\target\release\dano.exe"
           & $dano -w *.*
           if ($LASTEXITCODE -ne 0) { throw "write failed" }
-          if ((Get-Content dano_hashes.txt | Select-String '"path"').Count -ne 3) { throw "expected 3 records" }
+          Get-ChildItem
+          Get-Content dano_hashes.txt
+          $records = @(Get-Content dano_hashes.txt | Where-Object { $_ -like '*hash_value*' })
+          if ($records.Count -ne 3) { throw "expected 3 records, found $($records.Count)" }
           & $dano -t *.*
           if ($LASTEXITCODE -ne 0) { throw "test failed" }
           & $dano -p --canonical-paths a.mkv B.MP4
@@ -62,7 +65,8 @@ jobs:
           $dano = "..\target\release\dano.exe"
           "a.mkv`r`nB.MP4`r`n" | & $dano -w
           if ($LASTEXITCODE -ne 0) { throw "stdin write failed" }
-          if ((Get-Content dano_hashes.txt | Select-String '"path"').Count -ne 2) { throw "expected 2 records" }
+          $records = @(Get-Content dano_hashes.txt | Where-Object { $_ -like '*hash_value*' })
+          if ($records.Count -ne 2) { throw "expected 2 records, found $($records.Count)" }
           & $dano -t a.mkv B.MP4
           if ($LASTEXITCODE -ne 0) { throw "stdin test failed" }
 
