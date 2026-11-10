@@ -147,6 +147,8 @@ function Format-Tamanho($Bytes) {
 # --- preparacao ---------------------------------------------------------------
 
 if (-not (Test-Path -LiteralPath $Lista)) { throw "Lista nao encontrada: $Lista" }
+# caminho absoluto: os metodos do .NET nao seguem a pasta atual do PowerShell
+$Lista = (Resolve-Path -LiteralPath $Lista).Path
 
 $script:DanoExe = Find-Tool $Dano 'dano'
 $script:FfmpegExe = if ($SemDecodificar) { $null } else { Find-Tool $Ffmpeg 'ffmpeg' }

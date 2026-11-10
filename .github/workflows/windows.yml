@@ -113,6 +113,12 @@ jobs:
           foreach ($shell in 'pwsh', 'powershell') {
             Write-Host "::group::$shell"
             $out = Join-Path $PWD "twins\out-$shell"
+            # relative list path, from a directory other than the process start directory
+            Push-Location twins
+            & $shell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location '$PWD'; & '..\scripts\comparar-gemeos.ps1' -Lista lista.txt -RaizA '$rootA' -RaizB '$rootB' -Saida '$out-rel' -Dano '$dano' -SemDecodificar; exit `$LASTEXITCODE"
+            $relOk = $LASTEXITCODE -eq 0 -and (Test-Path "$out-rel\relatorio.csv")
+            Pop-Location
+            if (-not $relOk) { throw "${shell}: relative list path failed" }
             & $shell -NoProfile -ExecutionPolicy Bypass -File scripts\comparar-gemeos.ps1 -Lista $list -RaizA $rootA -RaizB $rootB -Saida $out -Dano $dano
             if ($LASTEXITCODE -ne 0) { throw "${shell}: script failed" }
             Write-Host "::endgroup::"
