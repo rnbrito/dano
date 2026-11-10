@@ -114,15 +114,15 @@ jobs:
             Write-Host "::group::$shell"
             $out = Join-Path $PWD "twins\out-$shell"
             & $shell -NoProfile -ExecutionPolicy Bypass -File scripts\comparar-gemeos.ps1 -Lista $list -RaizA $rootA -RaizB $rootB -Saida $out -Dano $dano
-            if ($LASTEXITCODE -ne 0) { throw "$shell: script failed" }
+            if ($LASTEXITCODE -ne 0) { throw "${shell}: script failed" }
             Write-Host "::endgroup::"
             $rows = Import-Csv "$out\relatorio.csv" -Delimiter ';' -Encoding UTF8
             $rows | Format-List Veredito, Relativo, HashA, HashB, ErrosA, ErrosB, Detalhe
-            if ($rows.Count -ne 3) { throw "$shell: expected 3 rows" }
+            if ($rows.Count -ne 3) { throw "${shell}: expected 3 rows" }
             $v = @{}; $rows | ForEach-Object { $v[(Split-Path $_.Relativo -Leaf)] = $_.Veredito }
-            if ($v['igual.mkv'] -ne 'IGUAIS') { throw "$shell: igual.mkv -> $($v['igual.mkv'])" }
-            if ($v['Preço danificado.mkv'] -ne 'DIFERENTES: B DANIFICADA') { throw "$shell: danificado -> $($v['Preço danificado.mkv'])" }
-            if ($v['SEM GEMEO.MP3'] -ne 'AUSENTE EM B') { throw "$shell: sem gemeo -> $($v['SEM GEMEO.MP3'])" }
+            if ($v['igual.mkv'] -ne 'IGUAIS') { throw "${shell}: igual.mkv -> $($v['igual.mkv'])" }
+            if ($v['Preço danificado.mkv'] -ne 'DIFERENTES: B DANIFICADA') { throw "${shell}: danificado -> $($v['Preço danificado.mkv'])" }
+            if ($v['SEM GEMEO.MP3'] -ne 'AUSENTE EM B') { throw "${shell}: sem gemeo -> $($v['SEM GEMEO.MP3'])" }
           }
 
       - uses: actions/upload-artifact@v4
