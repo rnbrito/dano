@@ -25,11 +25,10 @@ use std::{
 use crossbeam_channel::{Receiver, Sender};
 use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
-use which::which;
 
 use crate::config::{OptFlacBitsPerSecond, SelectedStreams};
 use crate::requests::{FileInfoRequest, RequestBundle};
-use crate::utility::DanoError;
+use crate::utility::{find_command, DanoError};
 use crate::{Config, DanoResult, DANO_FILE_INFO_VERSION, HEXADECIMAL_RADIX};
 
 pub struct FileInfoLookup;
@@ -116,7 +115,7 @@ impl FileInfo {
         request: &FileInfoRequest,
         tx_item: &Sender<FileInfo>,
     ) -> DanoResult<()> {
-        if let Ok(ffmpeg_command) = which("ffmpeg") {
+        if let Some(ffmpeg_command) = find_command("ffmpeg") {
             let decoded = match request.decoded {
                 Some(decoded) => decoded,
                 None => config.opt_decode,

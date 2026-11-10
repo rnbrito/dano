@@ -69,6 +69,20 @@ jobs:
           & $dano -t a.mkv B.MP4
           if ($LASTEXITCODE -ne 0) { throw "stdin test failed" }
 
+      - name: Find ffmpeg next to dano.exe when it is not in PATH
+        shell: pwsh
+        working-directory: media
+        run: |
+          New-Item -ItemType Directory ..\side | Out-Null
+          Copy-Item ..\target\release\dano.exe ..\side\
+          Copy-Item (Get-Command ffmpeg).Source ..\side\ffmpeg.exe
+          Remove-Item dano_hashes.txt
+          $env:PATH = "$env:SystemRoot\System32"
+          & ..\side\dano.exe -w a.mkv
+          if ($LASTEXITCODE -ne 0) { throw "write failed" }
+          $records = @(Get-Content dano_hashes.txt | Where-Object { $_ -like '*hash_value*' })
+          if ($records.Count -ne 1) { throw "expected 1 record, found $($records.Count)" }
+
       - uses: actions/upload-artifact@v4
         with:
           name: dano-windows-x86_64

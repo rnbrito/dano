@@ -86,6 +86,29 @@ impl Error for DanoError {
     }
 }
 
+// Find an external command, such as ffmpeg.  First search the PATH, then fall back
+// to the directory which contains the dano executable, and then to the current
+// working directory, as Windows users commonly keep such tools side by side
+// instead of adding them to their PATH.
+pub fn find_command(name: &str) -> Option<PathBuf> {
+    if let Ok(path) = which::which(name) {
+        return Some(path);
+    }
+
+    let file_name = format!("{}{}", name, std::env::consts::EXE_SUFFIX);
+
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(|parent| parent.to_path_buf()));
+    let pwd = std::env::current_dir().ok();
+
+    exe_dir
+        .into_iter()
+        .chain(pwd)
+        .map(|dir| dir.join(&file_name))
+        .find(|candidate| candidate.is_file())
+}
+
 pub fn make_tmp_file(path: &Path) -> PathBuf {
     let path_string = path.to_string_lossy().to_string();
     let res = path_string + TMP_SUFFIX;

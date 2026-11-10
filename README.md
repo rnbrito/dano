@@ -145,7 +145,7 @@ Note: In addition to what your package manager or OS may provide (for instance, 
 
 ## Windows
 
-This fork builds and runs on Windows.  You will need `ffmpeg.exe` (and optionally `metaflac.exe`) in your `PATH`:
+This fork builds and runs on Windows.  You will need `ffmpeg.exe` (and optionally `metaflac.exe`), either in your `PATH` or in the same folder as `dano.exe`:
 
 ```powershell
 # for the current PowerShell session, if you extracted ffmpeg to D:\downloads\ffmpeg

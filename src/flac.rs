@@ -19,8 +19,8 @@ use std::str::FromStr;
 use std::{path::Path, process::Command as ExecProcess, time::SystemTime};
 
 use rayon::prelude::*;
-use which::which;
 
+use crate::utility::find_command;
 use crate::config::SelectedStreams;
 use crate::lookup::HashValue;
 use crate::lookup::{FileInfo, FileMetadata};
@@ -55,7 +55,7 @@ impl RecordedFileInfo {
     }
 
     fn import_flac_hash_value(path: &Path) -> DanoResult<HashValue> {
-        let metaflac_cmd = if let Ok(metaflac_cmd) = which("metaflac") {
+        let metaflac_cmd = if let Some(metaflac_cmd) = find_command("metaflac") {
             metaflac_cmd
         } else {
             return Err(DanoError::new(
@@ -103,7 +103,7 @@ impl RecordedFileInfo {
     }
 
     pub fn import_flac_bps_value(path: &Path) -> DanoResult<u32> {
-        let metaflac_cmd = if let Ok(metaflac_cmd) = which("metaflac") {
+        let metaflac_cmd = if let Some(metaflac_cmd) = find_command("metaflac") {
             metaflac_cmd
         } else {
             return Err(DanoError::new(
