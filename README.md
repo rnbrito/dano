@@ -143,4 +143,22 @@ You may install `rustup` and build `dano` like so:
 
 Note: In addition to what your package manager or OS may provide (for instance, `apt install rustc cargo`, security-minded users may be interested to know that there are [alternative methods](https://rust-lang.github.io/rustup/installation/other.html) for installing the `rustc` compiler and `cargo` besides the method described above, which allow you to verify the `rustup` before install.
 
-Caveat: `dano` is only tested on MacOS and Linux, and will probably only compile and run on Unix-y Rust supported platforms, but a Windows is version is *likely* to compile with only minor changes.  My further thoughts on a Windows version can be found in this [linked issue](https://github.com/kimono-koans/dano/issues/3).
+## Windows
+
+This fork builds and runs on Windows.  You will need `ffmpeg.exe` (and optionally `metaflac.exe`) in your `PATH`:
+
+```powershell
+# for the current PowerShell session, if you extracted ffmpeg to D:\downloads\ffmpeg
+$env:PATH = "D:\downloads\ffmpeg\bin;$env:PATH"
+
+cargo install --git https://github.com/rnbrito/dano
+dano -w *.mkv
+dano -t *.mkv
+```
+
+Windows specific notes:
+
+* `-x`/`--xattr` stores the checksum in an NTFS Alternate Data Stream named `user.dano.checksum` (the closest Windows equivalent of an xattr).  This requires an NTFS volume; FAT32/exFAT and many network shares don't support streams, so use the hash file there.  You can inspect the stream with `Get-Content file.mkv -Stream user.dano.checksum`.  The file's modify time is preserved when the stream is written.
+* Wildcards (`*.mkv`) are expanded by `dano` itself, as `cmd.exe` and PowerShell don't expand them.
+* The file extension filter is case-insensitive (`.MP4` is accepted).
+* Upstream `dano` is only tested on MacOS and Linux.  Upstream thoughts on a Windows version can be found in this [linked issue](https://github.com/kimono-koans/dano/issues/3).

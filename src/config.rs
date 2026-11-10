@@ -272,7 +272,7 @@ impl Config {
     fn from_matches(matches: ArgMatches) -> DanoResult<Self> {
         // current working directory will be helpful in a number of places
         let pwd = if let Ok(pwd) = std::env::current_dir() {
-            if let Ok(path) = PathBuf::from(&pwd).canonicalize() {
+            if let Ok(path) = dunce::canonicalize(&pwd) {
                 PathBuf::from(path.as_path())
             } else {
                 return Err(DanoError::new(
@@ -365,7 +365,7 @@ impl Config {
 
         let paths: Vec<PathBuf> = {
             let res: Vec<PathBuf> = if let Some(input_files) = matches.values_of_os("INPUT_FILES") {
-                input_files.par_bridge().map(PathBuf::from).collect()
+                Self::expand_globs(input_files.map(PathBuf::from).collect())
             } else {
                 match &exec_mode {
                     ExecMode::Test(_) if hash_file.exists() => Vec::new(),
@@ -402,6 +402,46 @@ impl Config {
             hash_file,
             paths,
         })
+    }
+
+    // Unix shells expand wildcards before dano sees them, but cmd.exe and
+    // PowerShell do not, so on Windows we expand them ourselves.
+    #[cfg(windows)]
+    fn expand_globs(raw_paths: Vec<PathBuf>) -> Vec<PathBuf> {
+        raw_paths
+            .into_iter()
+            .flat_map(|path| {
+                let path_str = path.to_string_lossy();
+
+                if !path_str.contains(['*', '?', '[']) || path.exists() {
+                    return vec![path];
+                }
+
+                let options = glob::MatchOptions {
+                    case_sensitive: false,
+                    require_literal_separator: true,
+                    require_literal_leading_dot: false,
+                };
+
+                match glob::glob_with(&path_str, options) {
+                    Ok(paths) => {
+                        let expanded: Vec<PathBuf> = paths.flatten().collect();
+
+                        if expanded.is_empty() {
+                            vec![path]
+                        } else {
+                            expanded
+                        }
+                    }
+                    Err(_) => vec![path],
+                }
+            })
+            .collect()
+    }
+
+    #[cfg(not(windows))]
+    fn expand_globs(raw_paths: Vec<PathBuf>) -> Vec<PathBuf> {
+        raw_paths
     }
 
     fn parse_paths(
@@ -442,7 +482,7 @@ impl Config {
             })
             .map(|path| {
                 if opt_canonical_paths {
-                    if let Ok(canonical) = path.canonicalize() {
+                    if let Ok(canonical) = dunce::canonicalize(path) {
                         return canonical;
                     }
 
@@ -494,7 +534,12 @@ impl Config {
 
                     if auto_extension_filter
                         .lines()
-                        .any(|extension| opt_extension == Some(OsStr::new(extension)))
+                        .map(|extension| extension.trim())
+                        .any(|extension| {
+                            opt_extension.map_or(false, |ext| {
+                                ext.eq_ignore_ascii_case(OsStr::new(extension))
+                            })
+                        })
                     {
                         return Some(Either::Right(path));
                     }

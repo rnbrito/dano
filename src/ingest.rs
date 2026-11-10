@@ -115,7 +115,7 @@ impl RecordedFileInfo {
 
     fn read_file_info_from_xattr(path: &Path) -> Option<FileInfo> {
         fn inner(path: &Path) -> DanoResult<Option<FileInfo>> {
-            if let Some(bytes) = xattr::get(path, DANO_XATTR_KEY_NAME)? {
+            if let Some(bytes) = crate::attrs::get(path, DANO_XATTR_KEY_NAME)? {
                 let line = std::str::from_utf8(&bytes)?;
                 let res = deserialize(line)?;
 

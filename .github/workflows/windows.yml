@@ -1,0 +1,71 @@
+name: Windows build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: choco install ffmpeg -y --no-progress
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Generate test media
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory media | Out-Null
+          ffmpeg -loglevel error -f lavfi -i sine=d=2 -f lavfi -i testsrc=d=2 -shortest media/a.mkv
+          ffmpeg -loglevel error -f lavfi -i sine=d=2 media/B.MP4
+          ffmpeg -loglevel error -i media/a.mkv -c copy -metadata title=retagged media/a_retag.mkv
+
+      - name: Hash file round trip (wildcards, uppercase extension)
+        shell: pwsh
+        working-directory: media
+        run: |
+          $dano = "..\target\release\dano.exe"
+          & $dano -w *.*
+          if ($LASTEXITCODE -ne 0) { throw "write failed" }
+          if ((Get-Content dano_hashes.txt | Select-String '"path"').Count -ne 3) { throw "expected 3 records" }
+          & $dano -t *.*
+          if ($LASTEXITCODE -ne 0) { throw "test failed" }
+          & $dano -p --canonical-paths a.mkv B.MP4
+
+      - name: Alternate data stream round trip
+        shell: pwsh
+        working-directory: media
+        run: |
+          $dano = "..\target\release\dano.exe"
+          Remove-Item dano_hashes.txt
+          $before = (Get-Item a.mkv).LastWriteTimeUtc
+          & $dano -w -x a.mkv
+          if ($LASTEXITCODE -ne 0) { throw "xattr write failed" }
+          if (Test-Path dano_hashes.txt) { throw "hash file should not be written in xattr mode" }
+          Get-Content a.mkv -Stream user.dano.checksum
+          if ((Get-Item a.mkv).LastWriteTimeUtc -ne $before) { throw "modify time was not preserved" }
+          & $dano -t a.mkv
+          if ($LASTEXITCODE -ne 0) { throw "xattr test failed" }
+          & $dano --clean a.mkv
+          if ($LASTEXITCODE -ne 0) { throw "clean failed" }
+          if (Get-Item a.mkv -Stream user.dano.checksum -ErrorAction SilentlyContinue) { throw "stream not removed" }
+
+      - name: Stdin with CRLF line endings
+        shell: pwsh
+        working-directory: media
+        run: |
+          $dano = "..\target\release\dano.exe"
+          "a.mkv`r`nB.MP4`r`n" | & $dano -w
+          if ($LASTEXITCODE -ne 0) { throw "stdin write failed" }
+          "a.mkv`r`nB.MP4`r`n" | & $dano -t
+          if ($LASTEXITCODE -ne 0) { throw "stdin test failed" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dano-windows-x86_64
+          path: target/release/dano.exe

@@ -31,7 +31,13 @@ crossbeam-channel = { version = "0.5.15", default-features = false, features = [
     "std",
 ] }
 num_cpus = { version = "1.17.0", default-features = false }
+dunce = { version = "1.0.5" }
+
+[target.'cfg(unix)'.dependencies]
 xattr = { version = "1.6.1", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+glob = { version = "0.3.3" }
 
 [package.metadata.deb]
 maintainer = "kimono koans <https://github.com/kimono-koans/>"

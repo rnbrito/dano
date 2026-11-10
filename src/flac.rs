@@ -72,8 +72,10 @@ impl RecordedFileInfo {
         let process_output = ExecProcess::new(metaflac_cmd)
             .args(&process_args)
             .output()?;
-        let stdout_string = std::str::from_utf8(&process_output.stdout)?.trim();
-        let stderr_string = std::str::from_utf8(&process_output.stderr)?.trim();
+        let stdout_string_lossy = String::from_utf8_lossy(&process_output.stdout);
+        let stdout_string = stdout_string_lossy.trim();
+        let stderr_string_lossy = String::from_utf8_lossy(&process_output.stderr);
+        let stderr_string = stderr_string_lossy.trim();
 
         if stderr_string.contains("FLAC__METADATA_CHAIN_STATUS_NOT_A_FLAC_FILE") {
             let msg = format!("Path is not a valid FLAC file: {}", path_string);
@@ -118,8 +120,10 @@ impl RecordedFileInfo {
         let process_output = ExecProcess::new(metaflac_cmd)
             .args(&process_args)
             .output()?;
-        let stdout_string = std::str::from_utf8(&process_output.stdout)?.trim();
-        let stderr_string = std::str::from_utf8(&process_output.stderr)?.trim();
+        let stdout_string_lossy = String::from_utf8_lossy(&process_output.stdout);
+        let stdout_string = stdout_string_lossy.trim();
+        let stderr_string_lossy = String::from_utf8_lossy(&process_output.stderr);
+        let stderr_string = stderr_string_lossy.trim();
 
         if stderr_string.contains("FLAC__METADATA_CHAIN_STATUS_NOT_A_FLAC_FILE") {
             let msg = format!("Path is not a valid FLAC file: {}", path_string);

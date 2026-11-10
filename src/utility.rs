@@ -26,6 +26,7 @@ use std::{
 use rayon::{prelude::*, ThreadPool};
 use serde_json::Value;
 
+use crate::attrs;
 use crate::lookup::FileInfo;
 use crate::output::WriteType;
 use crate::versions::LegacyVersion;
@@ -110,12 +111,11 @@ pub fn write_non_file(file_info: &FileInfo) -> DanoResult<()> {
 }
 
 pub fn remove_dano_xattr(path: &Path) -> DanoResult<()> {
-    xattr::remove(path, DANO_XATTR_KEY_NAME).map_err(|err| err.into())
+    attrs::remove(path, DANO_XATTR_KEY_NAME).map_err(|err| err.into())
 }
 
 fn write_out_xattr(out_string: &str, file_info: &FileInfo) -> DanoResult<()> {
-    let _ = xattr::remove(&file_info.path, DANO_XATTR_KEY_NAME);
-    xattr::set(&file_info.path, DANO_XATTR_KEY_NAME, out_string.as_bytes())
+    attrs::set(&file_info.path, DANO_XATTR_KEY_NAME, out_string.as_bytes())
         .map_err(|err| err.into())
 }
 
@@ -249,6 +249,8 @@ pub fn read_stdin() -> DanoResult<Vec<PathBuf>> {
         // always split on newline or null char, if available
         buffer_string
             .split(&['\n', '\0'])
+            // handle Windows (CRLF) line endings
+            .map(|s| s.trim_end_matches('\r'))
             .filter(|s| !s.is_empty())
             .map(|s| s.to_owned())
             .map(PathBuf::from)

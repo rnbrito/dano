@@ -179,8 +179,10 @@ impl FileInfo {
             .args(&process_args)
             .output()?;
 
-        let stdout = std::str::from_utf8(&process_output.stdout)?.trim();
-        let stderr = std::str::from_utf8(&process_output.stderr)?.trim();
+        let stdout_lossy = String::from_utf8_lossy(&process_output.stdout);
+        let stdout = stdout_lossy.trim();
+        let stderr_lossy = String::from_utf8_lossy(&process_output.stderr);
+        let stderr = stderr_lossy.trim();
 
         if !process_output.status.success() {
             if stderr.contains("incorrect codec parameters") {

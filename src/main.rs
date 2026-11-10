@@ -15,6 +15,7 @@
 // For the full copyright and license information, please view the LICENSE file
 // that was distributed with this source code.
 
+mod attrs;
 mod config;
 mod flac;
 mod ingest;
@@ -82,6 +83,8 @@ fn exec() -> DanoResult<i32> {
                         false
                     }
                     Err(err) if err.to_string().contains("No data available") => false,
+                    // macOS reports ENOATTR as "Attribute not found"
+                    Err(err) if err.to_string().contains("Attribute not found") => false,
                     Err(err) => {
                         eprintln!("ERROR: {}", err);
                         true
